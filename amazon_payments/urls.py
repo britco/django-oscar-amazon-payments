@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, url
 
 import views
+from django.views.decorators.csrf import csrf_exempt
 
 
 # URLs for one-step checkout process
@@ -31,4 +32,7 @@ urlpatterns += patterns("",
     url(r'^amazon2/payment-details/$',
         views.AmazonPaymentDetailsView.as_view(),
         name='amazon-payments-payment-details'),
+    url(r'amazon2/update-taxes/$',
+        csrf_exempt(views.AmazonUpdateTaxesAndShippingView.as_view()),
+        name='amazon-payment-update-taxes'),
 )
