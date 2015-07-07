@@ -99,7 +99,7 @@ window.onAmazonLoginReady = function() {
 {% endblock payment_details %}
 </div>
 {% block place_order %}
-<form method="post" class="text-right" style="padding:30px 0;">
+<form action="." method="post" class="text-right" style="padding:30px 0;">
     {% csrf_token %}
     <input type="hidden" id="amazon_error_code" name="amazon_error_code" value="" />
     <input type="hidden" id="amazon_error_message" name="amazon_error_message" value="" />

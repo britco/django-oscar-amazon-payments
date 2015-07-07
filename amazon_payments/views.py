@@ -15,7 +15,7 @@ from oscar.apps.checkout.views import (
     PaymentDetailsView, ShippingMethodView, PaymentMethodView, IndexView)
 
 from models import AmazonPaymentsSession
-from amazon_payments import AmazonPaymentsAPI, AmazonPaymentsAPIError
+from api import AmazonPaymentsAPI, AmazonPaymentsAPIError
 
 logger = logging.getLogger("amazon_payments")
 
@@ -31,6 +31,10 @@ CheckoutSessionMixin = get_class('checkout.session', 'CheckoutSessionMixin')
 FailedPreCondition = get_class('checkout.exceptions', 'FailedPreCondition')
 NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 
+
+from brit_python.checkout.views import CheckoutView
+import oscar 
+oscar_version_changed = oscar.VERSION[0:2] != (0, 6)
 
 class AmazonLoginRedirectView(generic.RedirectView):
     """
@@ -303,8 +307,7 @@ class AmazonPaymentMethodView(AmazonCheckoutView, PaymentMethodView):
         return redirect(reverse('checkout:amazon-payments-payment-details'))
 
 
-class BaseAmazonPaymentDetailsView(AmazonCheckoutView, PaymentDetailsView):
-
+class BaseAmazonPaymentDetailsView(AmazonCheckoutView, PaymentDetailsView ):
     def dispatch(self, *args, **kwargs):
         if not self.init_amazon_payments():
             messages.error(self.request,
@@ -540,6 +543,12 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             order_total = self.get_order_totals(
                 self.request.basket,
                 shipping_method=shipping_method)
+
+            ### by sjf
+            request.basket.calculate_tax(
+                shipping_address
+            )
+            ###
             submission = self.build_submission(
                 user=request.user, shipping_method=shipping_method,
                 order_total=order_total, shipping_address=shipping_address)
@@ -548,6 +557,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
                 submission['order_kwargs']['guest_email'] = (
                     amazon_order_details.Buyer.Email.text)
             result = self.submit(**submission)
+
             return result
 
         amazon_error_code = request.POST.get("amazon_error_code")
@@ -580,3 +590,36 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
         self.preview = False
         ctx = self.get_context_data(**kwargs)
         return self.render_to_response(ctx)
+
+    def build_submission(self, **kwargs):
+        """
+        Return a dict of data to submitted to pay for, and create an order
+        """
+        basket = kwargs.get('basket', self.request.basket)
+        shipping_address = kwargs['shipping_address']
+        shipping_method = kwargs['shipping_method'] 
+
+        if not self.get_shipping_address(basket):
+            if oscar_version_changed:
+                raise EnvironmentError("You aren't using the proper version of oscar! Delete the build_submission function.")
+
+            logger.warning(
+                'Expected Oscar version to changed, but it didnt with basket #{}.'.format(
+                    oscar.VERSION
+                )
+            )
+
+        total = self.get_order_totals(
+            basket, shipping_method=shipping_method)
+        submission = {
+            'user': self.request.user,
+            'basket': basket,
+            'shipping_address': shipping_address,
+            'shipping_method': shipping_method,
+            'order_total': total,
+            'order_kwargs': {},
+            'payment_kwargs': {}}
+        if not submission['user'].is_authenticated():
+            email = self.checkout_session.get_guest_email()
+            submission['order_kwargs']['guest_email'] = email
+        return submission
