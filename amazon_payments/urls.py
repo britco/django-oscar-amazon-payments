@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, url
+from django.views.decorators.csrf import csrf_exempt
 
 import views
-from django.views.decorators.csrf import csrf_exempt
 
 
 # URLs for one-step checkout process

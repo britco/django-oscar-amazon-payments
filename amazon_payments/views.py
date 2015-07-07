@@ -1,4 +1,5 @@
 import logging
+import simplejson
 
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.contrib import messages
@@ -8,6 +9,7 @@ from django.shortcuts import redirect, render_to_response
 from django.template import RequestContext
 from django.views import generic
 from django import http
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 
 from oscar.core.loading import get_class, get_model
 
@@ -624,13 +626,6 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             submission['order_kwargs']['guest_email'] = email
         return submission
 
-
-##
-
-#######
-
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
-import simplejson
 
 
 class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
