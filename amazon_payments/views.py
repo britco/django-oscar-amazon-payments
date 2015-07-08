@@ -544,7 +544,6 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
                 self.request.basket,
                 shipping_method=shipping_method)
 
-            ### by sjf
             request.basket.calculate_tax(
                 shipping_address
             )
