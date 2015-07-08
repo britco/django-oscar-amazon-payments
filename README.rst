@@ -7,7 +7,7 @@ This package provides integration between `django-oscar`_ and `Amazon Payments (
 .. _django-oscar: https://github.com/django-oscar/django-oscar
 .. _`Amazon Payments (Login and Pay with Amazon)`: https://payments.amazon.com
 
-Tested with **Python 2.7**, **Django 1.6** and **django-oscar 0.7.3**.
+Tested with **Python 2.7**, **Django 1.5** and **django-oscar 0.6**.
 
 Setup
 -----
