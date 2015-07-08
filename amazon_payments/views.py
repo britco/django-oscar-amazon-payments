@@ -544,9 +544,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
                 self.request.basket,
                 shipping_method=shipping_method)
 
-            request.basket.calculate_tax(
-                shipping_address
-            )
+            request.basket.calculate_tax(shipping_address)
             
             submission = self.build_submission(
                 user=request.user, shipping_method=shipping_method,
