@@ -1,4 +1,5 @@
 import logging
+import simplejson
 
 from django.core.urlresolvers import reverse, reverse_lazy
 from django.contrib import messages
@@ -8,6 +9,7 @@ from django.shortcuts import redirect, render_to_response
 from django.template import RequestContext
 from django.views import generic
 from django import http
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidden
 
 from oscar.core.loading import get_class, get_model
 
@@ -620,3 +622,88 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             email = self.checkout_session.get_guest_email()
             submission['order_kwargs']['guest_email'] = email
         return submission
+
+
+
+class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
+
+    template_name = 'amazon_payments/onestep_checkout.html'
+    pre_conditions = (
+        'check_basket_is_not_empty',
+        'check_basket_is_valid',)
+
+    def get_default_shipping_method(self, basket):
+        return Repository().get_default_shipping_method(
+            user=self.request.user, basket=basket,
+            request=self.request)
+
+
+    def post(self, request, *args, **kwargs):
+        
+        data = {
+            "msg": "",
+            "status": "error"
+        }
+        if request.basket.is_empty:
+            data['msg'] = _("You need to add some items to your basket to check out.")
+        else:
+            try:
+                amazon_order_details = self.get_amazon_order_details(request)
+            except AmazonPaymentsAPIError, e:
+                logger.debug(unicode(e))
+                if e.args[0] == "InvalidAddressConsentToken":
+                    data['msg'] = _("Your session has expired. Please sign in again by"
+                            " clicking on the 'Pay with Amazon' button.")
+                else:
+                    data['msg'] = _("Sorry, there's a problem processing your order "
+                            "via Amazon. Please try again later.")
+                messages.error(request, data['msg'])
+                return HttpResponse(
+                    simplejson.dumps(data),
+                    mimetype="application/json"
+                )
+            if not amazon_order_details:
+                return HttpResponse(
+                    simplejson.dumps(data),
+                    mimetype="application/json"
+                )
+            # Get shipping address
+            amazon_shipping_address = amazon_order_details.Destination\
+                .PhysicalDestination
+            shipping_address = ShippingAddress(
+                first_name=amazon_shipping_address.Name.text,
+                line1=amazon_shipping_address.AddressLine1.text,
+                line4=amazon_shipping_address.City.text,
+                state=amazon_shipping_address.StateOrRegion.text,
+                postcode=amazon_shipping_address.PostalCode.text,
+                country=Country.objects.get(
+                    iso_3166_1_a2=amazon_shipping_address.CountryCode.text),
+            )
+            if amazon_shipping_address.AddressLine2:
+                shipping_address.line2 = amazon_shipping_address.AddressLine2\
+                    .text
+
+            shipping_method = self.get_default_shipping_method(
+                self.request.basket)
+            order_total = self.get_order_totals(
+                self.request.basket,
+                shipping_method=shipping_method)
+
+            request.basket.calculate_tax(
+                shipping_address
+            )
+            shipping = shipping_method.charge_excl_tax
+            taxes = request.basket.total_tax
+
+            data = {
+                "status": "ok",
+                "msg": "success",
+                "taxes": "$"+str(taxes),
+                "total": "$"+str(request.basket.total_incl_tax + shipping),
+                "shipping": "$"+str(shipping),
+            }
+
+        return HttpResponse(
+            simplejson.dumps(data),
+            mimetype="application/json"
+        )

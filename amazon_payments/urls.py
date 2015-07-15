@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, url
+from django.views.decorators.csrf import csrf_exempt
 
 import views
 
@@ -31,4 +32,7 @@ urlpatterns += patterns("",
     url(r'^amazon2/payment-details/$',
         views.AmazonPaymentDetailsView.as_view(),
         name='amazon-payments-payment-details'),
+    url(r'amazon2/update-taxes/$',
+        csrf_exempt(views.AmazonUpdateTaxesAndShippingView.as_view()),
+        name='amazon-payment-update-taxes'),
 )
