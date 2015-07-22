@@ -3,6 +3,7 @@ An Amazon Payments package for django-oscar
 ===========================================
 
 .. image:: https://circleci.com/gh/britco/django-oscar-amazon-payments.svg?style=svg
+    :target: https://circleci.com/gh/britco/django-oscar-amazon-payments
 
 This package provides integration between `django-oscar`_ and `Amazon Payments (Login and Pay with Amazon)`_.
 
