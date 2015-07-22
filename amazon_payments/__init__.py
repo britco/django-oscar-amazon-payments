@@ -1,3 +1,3 @@
 from api import AmazonPaymentsAPI, AmazonPaymentsAPIError  # noqa
 
-VERSION = "0.3"
+VERSION = "0.2"
