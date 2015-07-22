@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
+
 setup(
     name='django-oscar-amazon-payments',
     version="0.2.1",
