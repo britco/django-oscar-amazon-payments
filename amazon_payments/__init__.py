@@ -1,4 +1,8 @@
 VERSION = "0.2"
 
-from api import AmazonPaymentsAPI, AmazonPaymentsAPIError  # noqa
+try:
+    from api import AmazonPaymentsAPI, AmazonPaymentsAPIError  # noqa
+except ImportError:
+    pass
+
 
