@@ -35,4 +35,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Topic :: Other/Nonlisted Topic'],
+    test_suite="tests.tests", 
+    tests_require=["mock==0.8.0"],
+    test_loader="unittest:TestLoader"
 )
