@@ -657,7 +657,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 else:
                     data['msg'] = _("Sorry, there's a problem processing your order "
                             "via Amazon. Please try again later.")
-                messages.error(request, data['msg'])
+
                 return HttpResponse(
                     simplejson.dumps(data),
                     mimetype="application/json"
