@@ -661,14 +661,14 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 return HttpResponse(
                     simplejson.dumps(data),
                     mimetype="application/json",
-                    status_code=412
+                    status_code=428
                 )
             if not amazon_order_details:
                 data['msg'] = _("There no amazon details")
                 return HttpResponse(
                     simplejson.dumps(data),
                     mimetype="application/json",
-                    status_code=412
+                    status_code=428
                 )
             # Get shipping address
             amazon_shipping_address = amazon_order_details.Destination\
