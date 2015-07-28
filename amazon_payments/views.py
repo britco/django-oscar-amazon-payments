@@ -657,15 +657,18 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 else:
                     data['msg'] = _("Sorry, there's a problem processing your order "
                             "via Amazon. Please try again later.")
-                messages.error(request, data['msg'])
+
                 return HttpResponse(
                     simplejson.dumps(data),
-                    mimetype="application/json"
+                    mimetype="application/json",
+                    status_code=428
                 )
             if not amazon_order_details:
+                data['msg'] = _("There no amazon details")
                 return HttpResponse(
                     simplejson.dumps(data),
-                    mimetype="application/json"
+                    mimetype="application/json",
+                    status_code=428
                 )
             # Get shipping address
             amazon_shipping_address = amazon_order_details.Destination\
