@@ -648,7 +648,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
             data['msg'] = _("You need to add some items to your basket to check out.")
         else:
             try:
-                amazon_order_details = self.get_amazon_order_details(request)
+                amazon_order_details = self.get_amazon_order_details(request, validate_payment_details=False)
             except AmazonPaymentsAPIError, e:
                 logger.debug(unicode(e))
                 if e.args[0] == "InvalidAddressConsentToken":
