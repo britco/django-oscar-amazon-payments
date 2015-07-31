@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-oscar-amazon-payments',
-    version="0.2.2",
+    version="0.2.3",
     url='https://github.com/simonkagwe/django-oscar-amazon-payments',
     author="Simon Kagwi",
     author_email="simonkagwe@yahoo.com",
