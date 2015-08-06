@@ -206,7 +206,9 @@ class AmazonPaymentsAPI(object):
              "ConfirmNow": "true",
              "IdType": "BillingAgreement",
              "OrderReferenceAttributes.OrderTotal.Amount": order_amount,
-             "OrderReferenceAttributes.OrderTotal.CurrencyCode": currency},
+             "OrderReferenceAttributes.OrderTotal.CurrencyCode": currency,
+             "OrderReferenceAttributes.SellerOrderAttributes.SellerOrderId": kwargs.get('order_id', 'N/A'),
+             },
             **kwargs)[0]
         return response\
             .CreateOrderReferenceForIdResponse\
