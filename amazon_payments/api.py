@@ -193,7 +193,7 @@ class AmazonPaymentsAPI(object):
         return True, amazon_order_details
 
     def create_order_reference_id(self, billing_agreement_id, order_amount,
-                                  currency, order_id='N/A', **kwargs):
+                                  currency, order_id=None, **kwargs):
         """
         Performs an "CreateOrderReferenceForId" API call and returns
         the created order reference ID.
