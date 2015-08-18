@@ -448,7 +448,8 @@ class AmazonPaymentDetailsView(BaseAmazonPaymentDetailsView):
                 order_reference_id = self.api.create_order_reference_id(
                     self.session.billing_agreement_id, total.incl_tax,
                     settings.AMAZON_PAYMENTS_CURRENCY,
-                    callback=self.save_to_db_callback)
+                    callback=self.save_to_db_callback,
+                    order_id="1%s" % basket.id)
             except self.api.exception_class:
                 messages.error(self.request, _(
                     "An error occurred when processing your payment. "
@@ -497,7 +498,9 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
                 order_reference_id = self.api.create_order_reference_id(
                     self.session.billing_agreement_id, total.incl_tax,
                     settings.AMAZON_PAYMENTS_CURRENCY,
-                    callback=self.save_to_db_callback)
+                    callback=self.save_to_db_callback,
+                    order_id=order_number
+                    )
             except self.api.exception_class, e:
                 raise PaymentError(*e.args)
             self.session.order_reference_id = order_reference_id
