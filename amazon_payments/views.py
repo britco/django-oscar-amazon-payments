@@ -548,7 +548,18 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             order_total = self.get_order_totals(
                 self.request.basket,
                 shipping_method=shipping_method)
-
+                
+            if request.basket.is_shipping_required() and \
+                shipping_address.country.pk not in [country.pk for country in \
+                                                shipping_method.method.countries.all()]:
+                countries = ", ".join([country.pk for country in \
+                                        shipping_method.method.countries.all()])
+                message=_("We do not yet ship to countries outside of: {}.".format(
+                                    countries))
+                
+                messages.error(request, _(message))
+                return redirect('checkout:amazon-payments-onestep')
+                
             request.basket.calculate_tax(shipping_address)
             
             submission = self.build_submission(
