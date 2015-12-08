@@ -129,7 +129,7 @@ class AmazonCheckoutView(object):
             getattr(request.basket, "has_subscriptions", False), **kwargs)
         if success:
             return result
-        for error in result:
+        for error in result: # should raise error
             messages.error(request, _(error))
 
     def check_user_email_is_captured(self, request):
@@ -648,7 +648,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
             data['msg'] = _("You need to add some items to your basket to check out.")
         else:
             try:
-                amazon_order_details = self.get_amazon_order_details(request)
+                amazon_order_details = self.get_amazon_order_details(request, validate_payment_details=False)
             except AmazonPaymentsAPIError, e:
                 logger.debug(unicode(e))
                 if e.args[0] == "InvalidAddressConsentToken":
@@ -688,6 +688,21 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
 
             shipping_method = self.get_default_shipping_method(
                 self.request.basket)
+
+            if shipping_address.country.pk not in [country.pk for country in \
+                                            shipping_method.countries.all()]:
+                countries = ", ".join([country.pk for country in \
+                                        shipping_method.countries.all()])
+                message=_("We do not yet ship to countries outside of: {}.".format(
+                                    countries))
+                # messages.error(self.request, _(message))
+                
+                return HttpResponse(
+                    simplejson.dumps({"error": message}),
+                    mimetype="application/json",
+                    status=428
+                )
+
             order_total = self.get_order_totals(
                 self.request.basket,
                 shipping_method=shipping_method)
