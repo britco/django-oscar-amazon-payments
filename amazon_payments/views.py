@@ -129,7 +129,7 @@ class AmazonCheckoutView(object):
             getattr(request.basket, "has_subscriptions", False), **kwargs)
         if success:
             return result
-        for error in result: # should raise error
+        for error in result:
             messages.error(request, _(error))
 
     def check_user_email_is_captured(self, request):
