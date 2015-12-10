@@ -732,8 +732,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
 
-            shipping_method = self.get_current_shipping_method(
-                request.basket)
+            shipping_method = self.get_current_shipping_method(request.basket)
 
             if shipping_address.country.pk not in [country.pk for country in \
                                             shipping_method.countries.all()]:
