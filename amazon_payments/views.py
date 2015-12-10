@@ -61,7 +61,7 @@ class ShippingMethodMixin(object):
         return Repository().get_default_shipping_method(
             request=self.request,
             user=self.request.user,
-            basket=self.request.basket,
+            basket=basket,
         )
 
 
@@ -204,7 +204,7 @@ class AmazonCheckoutView(object):
 
         # Check that shipping method has been set
         if not self.checkout_session.is_shipping_method_set(
-                self.request.basket):
+                request.basket):
             raise FailedPreCondition(
                 url=reverse('checkout:amazon-payments-shipping-method'),
                 message=_("Please choose a shipping method")
@@ -507,6 +507,11 @@ class AmazonOneStepPaymentDetailsView(
         'check_basket_is_not_empty',
         'check_basket_is_valid',)
 
+    def get_default_shipping_method(self, basket):
+        return Repository().get_default_shipping_method(
+            user=self.request.user, basket=basket,
+            request=self.request)
+
     def get(self, request, *args, **kwargs):
         if request.basket.is_empty:
             messages.error(request, _("You need to add some items to your"
@@ -567,16 +572,16 @@ class AmazonOneStepPaymentDetailsView(
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
             shipping_method = self.get_current_shipping_method(
-                self.request.basket)
+                request.basket)
             order_total = self.get_order_totals(
-                self.request.basket,
+                request.basket,
                 shipping_method=shipping_method)
 
             if request.basket.is_shipping_required() and \
                 shipping_address.country.pk not in [country.pk for country in \
-                                                shipping_method.method.countries.all()]:
+                                                shipping_method.countries.all()]:
                 countries = ", ".join([country.pk for country in \
-                                        shipping_method.method.countries.all()])
+                                        shipping_method.countries.all()])
                 message=_("We do not yet ship to countries outside of: {}.".format(
                                     countries))
 
@@ -669,6 +674,12 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
         'check_basket_is_valid',
     )
 
+    def get_default_shipping_method(self, basket):
+        return Repository().get_default_shipping_method(
+            user=self.request.user, basket=basket,
+            request=self.request)
+
+
     def post(self, request, *args, **kwargs):
         data = {
             "msg": "",
@@ -722,6 +733,20 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                     .text
 
             shipping_method = self.get_current_shipping_method(request.basket)
+
+            if shipping_address.country.pk not in [country.pk for country in \
+                                            shipping_method.countries.all()]:
+                countries = ", ".join([country.pk for country in \
+                                        shipping_method.countries.all()])
+                message=_("We do not yet ship to countries outside of: {}.".format(
+                                    countries))
+                # messages.error(self.request, _(message))
+                
+                return HttpResponse(
+                    simplejson.dumps({"error": message}),
+                    mimetype="application/json",
+                    status=428
+                )
 
             request.basket.calculate_tax(
                 shipping_address
