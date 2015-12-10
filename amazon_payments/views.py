@@ -481,7 +481,6 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
         'check_basket_is_valid',)
 
     def get_default_shipping_method(self, basket):
-
         return Repository().get_default_shipping_method(
             user=self.request.user, basket=self.request.basket,
             request=self.request)
@@ -648,6 +647,22 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
         'check_basket_is_not_empty',
         'check_basket_is_valid',)
 
+    def get_current_shipping_method(self):
+        session_data = checkout_utils.CheckoutSessionData(self.request)
+
+        shipping_method_code = session_data._get('shipping', 'method_code')
+        shipping_method = Repository().find_by_code(shipping_method_code, self.request.basket)
+
+        if not shipping_method:
+            shipping_method = Repository().get_default_shipping_method(
+                user=self.request.user,
+                basket=self.request.basket,
+                request=self.request,
+            )
+
+        return shipping_method
+
+
     def get_default_shipping_method(self, basket):
         return Repository().get_default_shipping_method(
             user=self.request.user, basket=basket,
@@ -702,17 +717,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
 
-            session_data = checkout_utils.CheckoutSessionData(self.request)
-
-            shipping_method_code = session_data._get('shipping', 'method_code')
-            shipping_method = Repository().find_by_code(shipping_method_code, self.request.basket)
-
-            if not shipping_method:
-                shipping_method = Repository().get_default_shipping_method(
-                    user=self.request.user,
-                    basket=self.request.basket,
-                    request=self.request,
-                )
+            shipping_method = self.get_current_shipping_method()
 
             order_total = self.get_order_totals(
                 self.request.basket,
