@@ -39,6 +39,32 @@ from brit_python.checkout.views import CheckoutView
 import oscar
 oscar_version_changed = oscar.VERSION[0:2] != (0, 6)
 
+
+class ShippingMethodMixin(object):
+    def get_current_shipping_method(self):
+        session_data = checkout_utils.CheckoutSessionData(self.request)
+        shipping_method_code = session_data._get('shipping', 'method_code')
+
+        shipping_method = Repository().find_by_code(
+            shipping_method_code,
+            self.request.basket,
+        )
+
+        if not shipping_method:
+            shipping_method = self.get_default_shipping_method(
+                self.request.basket,
+            )
+
+        return shipping_method
+
+    def get_default_shipping_method(self, basket):
+        return Repository().get_default_shipping_method(
+            request=self.request,
+            user=self.request.user,
+            basket=self.request.basket,
+        )
+
+
 class AmazonLoginRedirectView(generic.RedirectView):
     """
     Redirects to the next step after a user clicks on the
@@ -473,17 +499,13 @@ class AmazonOneStepLoginRedirectView(AmazonLoginRedirectView):
     _redirect_url = reverse_lazy('checkout:amazon-payments-onestep')
 
 
-class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
+class AmazonOneStepPaymentDetailsView(
+        ShippingMethodMixin, BaseAmazonPaymentDetailsView):
 
     template_name = 'amazon_payments/onestep_checkout.html'
     pre_conditions = (
         'check_basket_is_not_empty',
         'check_basket_is_valid',)
-
-    def get_default_shipping_method(self, basket):
-        return Repository().get_default_shipping_method(
-            user=self.request.user, basket=self.request.basket,
-            request=self.request)
 
     def get(self, request, *args, **kwargs):
         if request.basket.is_empty:
@@ -544,7 +566,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             if amazon_shipping_address.AddressLine2:
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
-            shipping_method = self.get_default_shipping_method(
+            shipping_method = self.get_current_shipping_method(
                 self.request.basket)
             order_total = self.get_order_totals(
                 self.request.basket,
@@ -593,7 +615,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
     def get_context_data(self, **kwargs):
         kwargs = RequestContext(self.request, kwargs)
         kwargs['basket'] = self.request.basket
-        method = self.get_default_shipping_method(self.request.basket)
+        method = self.get_current_shipping_method(self.request.basket)
         kwargs['shipping_method'] = method
         kwargs['order_total'] = self.get_order_totals(
             self.request.basket, method)
@@ -639,49 +661,29 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
         return submission
 
 
-
-class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
-
+class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDetailsView):
     template_name = 'amazon_payments/onestep_checkout.html'
+
     pre_conditions = (
         'check_basket_is_not_empty',
-        'check_basket_is_valid',)
-
-    def get_current_shipping_method(self):
-        session_data = checkout_utils.CheckoutSessionData(self.request)
-
-        shipping_method_code = session_data._get('shipping', 'method_code')
-        shipping_method = Repository().find_by_code(shipping_method_code, self.request.basket)
-
-        if not shipping_method:
-            shipping_method = Repository().get_default_shipping_method(
-                user=self.request.user,
-                basket=self.request.basket,
-                request=self.request,
-            )
-
-        return shipping_method
-
-
-    def get_default_shipping_method(self, basket):
-        return Repository().get_default_shipping_method(
-            user=self.request.user, basket=basket,
-            request=self.request)
-
+        'check_basket_is_valid',
+    )
 
     def post(self, request, *args, **kwargs):
-
         data = {
             "msg": "",
             "status": "error"
         }
+
         if request.basket.is_empty:
             data['msg'] = _("You need to add some items to your basket to check out.")
+
         else:
             try:
                 amazon_order_details = self.get_amazon_order_details(request, validate_payment_details=False)
             except AmazonPaymentsAPIError, e:
                 logger.debug(unicode(e))
+
                 if e.args[0] == "InvalidAddressConsentToken":
                     data['msg'] = _("Your session has expired. Please sign in again by"
                         " clicking on the 'Pay with Amazon' button.")
@@ -694,6 +696,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                     mimetype="application/json",
                     status_code=428
                 )
+
             if not amazon_order_details:
                 data['msg'] = _("There no amazon details")
                 return HttpResponse(
@@ -701,6 +704,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                     mimetype="application/json",
                     status_code=428
                 )
+
             # Get shipping address
             amazon_shipping_address = amazon_order_details.Destination\
                 .PhysicalDestination
