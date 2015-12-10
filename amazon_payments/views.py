@@ -13,6 +13,7 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseForbidde
 
 from oscar.core.loading import get_class, get_model
 
+from oscar.apps.checkout import utils as checkout_utils
 from oscar.apps.checkout.views import (
     PaymentDetailsView, ShippingMethodView, PaymentMethodView, IndexView)
 
@@ -35,7 +36,7 @@ NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 
 
 from brit_python.checkout.views import CheckoutView
-import oscar 
+import oscar
 oscar_version_changed = oscar.VERSION[0:2] != (0, 6)
 
 class AmazonLoginRedirectView(generic.RedirectView):
@@ -480,6 +481,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
         'check_basket_is_valid',)
 
     def get_default_shipping_method(self, basket):
+
         return Repository().get_default_shipping_method(
             user=self.request.user, basket=self.request.basket,
             request=self.request)
@@ -548,7 +550,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
             order_total = self.get_order_totals(
                 self.request.basket,
                 shipping_method=shipping_method)
-                
+
             if request.basket.is_shipping_required() and \
                 shipping_address.country.pk not in [country.pk for country in \
                                                 shipping_method.method.countries.all()]:
@@ -556,12 +558,12 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
                                         shipping_method.method.countries.all()])
                 message=_("We do not yet ship to countries outside of: {}.".format(
                                     countries))
-                
+
                 messages.error(request, _(message))
                 return redirect('checkout:amazon-payments-onestep')
-                
+
             request.basket.calculate_tax(shipping_address)
-            
+
             submission = self.build_submission(
                 user=request.user, shipping_method=shipping_method,
                 order_total=order_total, shipping_address=shipping_address)
@@ -610,7 +612,7 @@ class AmazonOneStepPaymentDetailsView(BaseAmazonPaymentDetailsView):
         """
         basket = kwargs.get('basket', self.request.basket)
         shipping_address = kwargs['shipping_address']
-        shipping_method = kwargs['shipping_method'] 
+        shipping_method = kwargs['shipping_method']
 
         if not self.get_shipping_address(basket):
             if oscar_version_changed:
@@ -653,7 +655,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
 
 
     def post(self, request, *args, **kwargs):
-        
+
         data = {
             "msg": "",
             "status": "error"
@@ -700,8 +702,18 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
 
-            shipping_method = self.get_default_shipping_method(
-                self.request.basket)
+            session_data = checkout_utils.CheckoutSessionData(self.request)
+
+            shipping_method_code = session_data._get('shipping', 'method_code')
+            shipping_method = Repository().find_by_code(shipping_method_code)
+
+            if not shipping_method:
+                shipping_method = Repository().get_default_shipping_method(
+                    user=self.request.user,
+                    basket=self.request.basket,
+                    request=self.request,
+                )
+
             order_total = self.get_order_totals(
                 self.request.basket,
                 shipping_method=shipping_method)
