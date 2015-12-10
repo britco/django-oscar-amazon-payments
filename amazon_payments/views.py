@@ -41,18 +41,18 @@ oscar_version_changed = oscar.VERSION[0:2] != (0, 6)
 
 
 class ShippingMethodMixin(object):
-    def get_current_shipping_method(self):
+    def get_current_shipping_method(self, basket):
         session_data = checkout_utils.CheckoutSessionData(self.request)
         shipping_method_code = session_data._get('shipping', 'method_code')
 
         shipping_method = Repository().find_by_code(
             shipping_method_code,
-            self.request.basket,
+            basket,
         )
 
         if not shipping_method:
             shipping_method = self.get_default_shipping_method(
-                self.request.basket,
+                basket,
             )
 
         return shipping_method
@@ -721,7 +721,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
 
-            shipping_method = self.get_current_shipping_method()
+            shipping_method = self.get_current_shipping_method(request.basket)
 
             request.basket.calculate_tax(
                 shipping_address
