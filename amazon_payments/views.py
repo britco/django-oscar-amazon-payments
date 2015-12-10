@@ -723,13 +723,10 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
 
             shipping_method = self.get_current_shipping_method()
 
-            order_total = self.get_order_totals(
-                self.request.basket,
-                shipping_method=shipping_method)
-
             request.basket.calculate_tax(
                 shipping_address
             )
+
             shipping = shipping_method.charge_excl_tax
             taxes = request.basket.total_tax
 
