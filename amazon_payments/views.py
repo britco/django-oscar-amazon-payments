@@ -669,10 +669,10 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
                 logger.debug(unicode(e))
                 if e.args[0] == "InvalidAddressConsentToken":
                     data['msg'] = _("Your session has expired. Please sign in again by"
-                            " clicking on the 'Pay with Amazon' button.")
+                        " clicking on the 'Pay with Amazon' button.")
                 else:
                     data['msg'] = _("Sorry, there's a problem processing your order "
-                            "via Amazon. Please try again later.")
+                        "via Amazon. Please try again later.")
 
                 return HttpResponse(
                     simplejson.dumps(data),
@@ -705,7 +705,7 @@ class AmazonUpdateTaxesAndShippingView(BaseAmazonPaymentDetailsView):
             session_data = checkout_utils.CheckoutSessionData(self.request)
 
             shipping_method_code = session_data._get('shipping', 'method_code')
-            shipping_method = Repository().find_by_code(shipping_method_code)
+            shipping_method = Repository().find_by_code(shipping_method_code, self.request.basket)
 
             if not shipping_method:
                 shipping_method = Repository().get_default_shipping_method(
