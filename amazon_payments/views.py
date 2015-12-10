@@ -61,7 +61,7 @@ class ShippingMethodMixin(object):
         return Repository().get_default_shipping_method(
             request=self.request,
             user=self.request.user,
-            basket=self.request.basket,
+            basket=basket,
         )
 
 
@@ -204,7 +204,7 @@ class AmazonCheckoutView(object):
 
         # Check that shipping method has been set
         if not self.checkout_session.is_shipping_method_set(
-                self.request.basket):
+                request.basket):
             raise FailedPreCondition(
                 url=reverse('checkout:amazon-payments-shipping-method'),
                 message=_("Please choose a shipping method")
@@ -509,7 +509,7 @@ class AmazonOneStepPaymentDetailsView(
 
     def get_default_shipping_method(self, basket):
         return Repository().get_default_shipping_method(
-            user=self.request.user, basket=self.request.basket,
+            user=self.request.user, basket=basket,
             request=self.request)
 
     def get(self, request, *args, **kwargs):
@@ -572,9 +572,9 @@ class AmazonOneStepPaymentDetailsView(
                 shipping_address.line2 = amazon_shipping_address.AddressLine2\
                     .text
             shipping_method = self.get_current_shipping_method(
-                self.request.basket)
+                request.basket)
             order_total = self.get_order_totals(
-                self.request.basket,
+                request.basket,
                 shipping_method=shipping_method)
 
             if request.basket.is_shipping_required() and \
@@ -733,7 +733,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                     .text
 
             shipping_method = self.get_current_shipping_method(
-                self.request.basket)
+                request.basket)
 
             if shipping_address.country.pk not in [country.pk for country in \
                                             shipping_method.countries.all()]:
@@ -750,7 +750,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                 )
 
             order_total = self.get_order_totals(
-                self.request.basket,
+                request.basket,
                 shipping_method=shipping_method)
 
             request.basket.calculate_tax(
