@@ -705,7 +705,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                 return HttpResponse(
                     simplejson.dumps(data),
                     mimetype="application/json",
-                    status_code=428
+                    status=428
                 )
 
             if not amazon_order_details:
@@ -713,7 +713,7 @@ class AmazonUpdateTaxesAndShippingView(ShippingMethodMixin, BaseAmazonPaymentDet
                 return HttpResponse(
                     simplejson.dumps(data),
                     mimetype="application/json",
-                    status_code=428
+                    status=428
                 )
 
             # Get shipping address
